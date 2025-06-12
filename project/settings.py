@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-!-@g%f7#20ni^31d4+n*&fhoh_t+s8%c#6(pt@c)b_qz8)mi1k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -132,6 +132,14 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
+
+
+# static files (css, javascript, Images)
+STATIC_URL = '/static'
+STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
+
+#For collecting static files before deploy
+import dj_database_url
 
 
 
