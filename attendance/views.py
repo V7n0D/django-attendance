@@ -3,8 +3,31 @@ from django.shortcuts import render
 from django.core.mail import send_mail
 from openpyxl import Workbook, load_workbook
 from datetime import datetime
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return redirect('mark_attendance')
+        else:
+            return render(request, 'login.html', {'error': 'Invalid credentials'})
+    
+    return render(request, 'login.html')
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
+@login_required
 def mark_attendance(request):
     if request.method == "POST":
         # ------ 1. Update Excel Sheet ------#
@@ -24,7 +47,6 @@ def mark_attendance(request):
         wb.save(file_path) 
 
         #-------- 2. Send Email --------#
-        print("Before sending mail")
         send_mail(
             subject ="Attendance Marked",
             message = f"Hi, Vinod, your attendance was marked at {timestamp}.",
@@ -32,7 +54,6 @@ def mark_attendance(request):
             recipient_list = [os.getenv('EMAIL_USER')],
             fail_silently=False,
         )     
-        print("After sending mail")
 
 
         return render(request, 'attendance/mark_attendance.html',{'message':'Attendance marked successfully!'})

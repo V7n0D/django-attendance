@@ -135,11 +135,15 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
 
 
 # static files (css, javascript, Images)
-STATIC_URL = '/static'
+STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 
 #For collecting static files before deploy
 import dj_database_url
+
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT = 'mark_attendance'
+LOGOUT_REDIRECT_URL = 'login'
 
 
 
