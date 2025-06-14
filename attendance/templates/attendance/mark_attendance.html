@@ -15,6 +15,13 @@
             <div class="alert alert-success text-center">
                 {{ message }}
             </div>
+
+            <!-- ✅ Download Excel Button -->
+            <div class="text-center mb-3">
+                <a href="{% url 'download_excel' %}" class="btn btn-outline-primary btn-sm">
+                    📥 Download This Month's Excel
+                </a>
+            </div>
         {% endif %}
 
         <form method="POST">
