@@ -9,16 +9,15 @@ from gspread_formatting import (
     cellFormat, color, textFormat,
     format_cell_range
 )
-from gspread.exceptions import CellNotFound
 
-# Set up logging
+# ✅ Set up logging
 logger = logging.getLogger(__name__)
 
-# Load environment variables
+# ✅ Load .env variables
 load_dotenv()
 
 def get_gspread_client():
-    """Initialize and return a gspread client using credentials from .env."""
+    """Return a gspread client using service account credentials."""
     try:
         scope = [
             "https://spreadsheets.google.com/feeds",
@@ -38,7 +37,7 @@ def get_gspread_client():
         raise
 
 def create_or_get_monthly_sheet():
-    """Create or return the current month's attendance spreadsheet."""
+    """Create or return the monthly attendance sheet for the current month."""
     now = datetime.now()
     title = f"Vinod - {now.strftime('%B %Y')}"
     client = get_gspread_client()
@@ -46,16 +45,16 @@ def create_or_get_monthly_sheet():
     try:
         spreadsheet = client.open(title)
         sheet = spreadsheet.sheet1
-        logger.debug(f"📄 Opened spreadsheet: {title}")
+        logger.debug(f"📄 Opened existing sheet: {title}")
     except gspread.SpreadsheetNotFound:
         logger.info(f"📄 Creating new spreadsheet: {title}")
         spreadsheet = client.create(title)
         sheet = spreadsheet.sheet1
         sheet.update("A1:D1", [["Date", "Day", "Status", "Time In"]])
 
-        # Fill month with all 'A' for Absent
-        rows = []
+        # ✅ Fill month with Absent days
         day = datetime(now.year, now.month, 1)
+        rows = []
         while day.month == now.month:
             rows.append([
                 day.strftime("%Y-%m-%d"),
@@ -67,11 +66,11 @@ def create_or_get_monthly_sheet():
 
         sheet.append_rows(rows)
 
-        # Insert summary row
+        # ✅ Add summary
         sheet.update_acell("B33", "Total Present")
         sheet.update_acell("C33", '=COUNTIF(C2:C32, "P")')
 
-        # Formatting
+        # ✅ Apply formatting
         bold = cellFormat(textFormat=textFormat(bold=True))
         fmt_absent = cellFormat(backgroundColor=color(1, 0.85, 0.85))
         fmt_present = cellFormat(backgroundColor=color(0.8, 1, 0.8))
@@ -93,24 +92,28 @@ def create_or_get_monthly_sheet():
             "wrapStrategy": "WRAP"
         })
 
-        # Share the sheet
+        # ✅ Share the spreadsheet
         creds_dict = json.loads(os.getenv("GOOGLE_CREDS_JSON"))
         spreadsheet.share('vinodkinpbl@gmail.com', perm_type='user', role='writer', notify=True)
-        spreadsheet.share(creds_dict["client_email"], perm_type='user', role='writer', notify=False)
-
-        logger.info(f"✅ Sheet created & shared: https://docs.google.com/spreadsheets/d/{spreadsheet.id}/edit")
+        spreadsheet.share(creds_dict['client_email'], perm_type='user', role='writer', notify=False)
+        logger.info(f"✅ Spreadsheet created and shared: https://docs.google.com/spreadsheets/d/{spreadsheet.id}/edit")
 
     return sheet
 
 def update_monthly_attendance(name="Vinod Karri"):
-    """Update current day's attendance to 'P' and time in."""
+    """Mark attendance for today as Present."""
     try:
         sheet = create_or_get_monthly_sheet()
         today = datetime.now().strftime("%Y-%m-%d")
         time_now = datetime.now().strftime("%I:%M %p")
 
-        cell = sheet.find(today)
-        sheet.update_cell(cell.row, 3, "P")  # Mark as Present
+        try:
+            cell = sheet.find(today)
+        except gspread.exceptions.CellNotFound:
+            logger.warning(f"⚠️ Date {today} not found in sheet")
+            return
+
+        sheet.update_cell(cell.row, 3, "P")
         sheet.update_cell(cell.row, 4, time_now)
 
         fmt_present = cellFormat(backgroundColor=color(0.8, 1, 0.8))
@@ -118,8 +121,6 @@ def update_monthly_attendance(name="Vinod Karri"):
 
         logger.info(f"✅ Attendance marked for {name} at {time_now} on {today}")
 
-    except CellNotFound:
-        logger.warning(f"⚠️ Date {today} not found in sheet")
     except Exception as e:
         logger.error(f"❌ Error in update_monthly_attendance: {str(e)}")
         raise
