@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Facify - Face Attendance</title>
+  <style>
+    video, canvas {
+      display: block;
+      margin: 10px auto;
+    }
+    .button-container {
+      text-align: center;
+      margin-top: 10px;
+    }
+    button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    .message {
+      text-align: center;
+      color: green;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">Facify: Face Attendance</h2>
+
+  <div class="message">
+    {% if message %}
+      {{ message }}
+    {% endif %}
+  </div>
+
+  <video id="video" width="320" height="240" autoplay></video>
+  <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+
+  <form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="image" id="image">
+    <div class="button-container">
+      <button type="button" onclick="takeSnapshot()">Take Snapshot</button>
+      <button type="button" onclick="closeCamera()">Close Camera</button>
+    </div>
+  </form>
+
+  <script>
+    let video = document.getElementById('video');
+    let stream = null;
+
+    // Start the camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function (mediaStream) {
+        stream = mediaStream;
+        video.srcObject = mediaStream;
+        video.play();
+      })
+      .catch(function (err) {
+        console.log("Error accessing camera: " + err);
+      });
+
+    function takeSnapshot() {
+      let canvas = document.getElementById('canvas');
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      let imageData = canvas.toDataURL('image/jpeg');
+      document.getElementById('image').value = imageData;
+
+      // Stop the webcam
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      // Submit the form
+      document.querySelector('form').submit();
+    }
+
+    function closeCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      video.srcObject = null;
+    }
+  </script>
+</body>
+</html>
