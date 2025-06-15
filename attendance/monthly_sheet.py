@@ -6,6 +6,8 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 from gspread_formatting import *
 import logging
+from gspread.exceptions import CellNotFound
+
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -119,7 +121,7 @@ def update_monthly_attendance(name="Vinod Karri"):
         format_cell_range(sheet, f"C{cell.row}", fmt_present)
         logger.debug(f"Attendance updated for {name} on {today} at {time_now}")
 
-    except gspread.exceptions.CellNotFound:
+    except CellNotFound:
         logger.warning(f"Today's date ({today}) not found in the sheet")
     except Exception as e:
         logger.error(f"Error in update_monthly_attendance: {str(e)}")
